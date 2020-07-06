@@ -24,6 +24,11 @@ class gbq_pd:
 
         insertable_df.to_gbq(f'{self.datasetId}.{self.table_name}', project_id=self.projectId,
                              if_exists=if_exists, credentials=self.credentials ,table_schema = self.schema)
+    
+    def append(self, insertable_df):
+
+        insertable_df.to_gbq(f'{self.datasetId}.{self.table_name}', project_id=self.projectId,
+                             if_exists='append', credentials=self.credentials ,table_schema = self.schema)
         
     def replace(self, insertable_df):
 

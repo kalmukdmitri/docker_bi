@@ -10,9 +10,7 @@ from refresh_reports import *
 from personal_reports import *
 
 try:
-    direct_table = gbq_pd( 'YandexAds', 'marketing_bi')
-    ydx_ads = y_direct_refresh()
-    direct_table.replace(ydx_ads)
+    y_direct_refresh()
     print('Yandex success')
 except:
     print('Yandex Fail')
