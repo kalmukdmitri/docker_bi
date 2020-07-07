@@ -26,7 +26,7 @@ def refresh_personal_reports():
     token = get_tokens()
     wf_regs_table = gbq_pd('report_regs', datasetId = 'wf_bi')
     query_compaines = """
-    SELECT 
+        SELECT 
         users.user_id,
         if(notif, users.email, False) as notif_mail,
         users.phone as phone, 
@@ -36,7 +36,8 @@ def refresh_personal_reports():
         showcase.vitrins,
         showcase.domain,
         ifnull(reg_sourse.reg_donner, 'Прямая') as reg_donner,
-        reg_sourse.reg_donner_id
+        reg_sourse.reg_donner_id,
+	concat("https://workface.ru/ru/company/",company_id) as company_url
     FROM `users`as users
 
     left join (
@@ -62,18 +63,20 @@ def refresh_personal_reports():
     user_shw.showcase_id as showcase_id,
     user_id,
     domain,
-    1 as vitrins
+    1 as vitrins,
+        company_id
     FROM (
     SELECT  
         showcase_id,
-        user_id
+        user_id,
+        cmp_id as company_id
     FROM (
         SELECT 
             good_offer_id as showcase_id, 
-            company_id
+            company_id as cmp_id
         FROM `good_offers`
         where is_showcase = 2) as jnt_cmp
-    join `companies` as cmp on cmp.company_id = jnt_cmp.company_id) as user_shw
+    join `companies` as cmp on cmp.company_id = jnt_cmp.cmp_id) as user_shw
     JOIN showcase_info on showcase_info.showcase_id = user_shw.showcase_id
     ) as showcase on showcase.user_id = users.user_id
         """
