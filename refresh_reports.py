@@ -379,6 +379,9 @@ def bi_report_refresh():
     FROM
     `kalmuktech.marketing_bi.predifined_leads_data_cookie`
     where utm_campaign = '(not set)'
+    
+    UNION ALL
+    select * from  `kalmuktech.old_ads.old_data_report` 
     """
     report_expense = gbq_pd( 'report', 'BI_Dataset')
     report_df = report_expense.df_query(join_table_gains_query)

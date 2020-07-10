@@ -8,6 +8,7 @@ from doc_token import get_tokens
 passwords = get_tokens()
 token = passwords['facebook']
 
+
 def fb_add_x(cell, fld):
     ld_click = 0
     if type(cell) == list:
@@ -35,7 +36,7 @@ def utm_to_colums_full(column):
 
 def get_match_table():
     
-    time= 'time_range={"since":"2020-01-01","until":"'+str(datetime.date.today())+'"}&time_increment=1'
+    time= 'time_range={"since":"2020-04-25","until":"'+str(datetime.date.today())+'"}&time_increment=1'
     fields = 'fields=campaign_name,ad_id,campaign_id,spend,actions'
     base_url= f"https://graph.facebook.com/v6.0/act_124276768426220/ads?limit=10000&fields=creative&{token}"
     results = requests.get(base_url)
@@ -90,7 +91,7 @@ def refresh_fb():
 
     # Facebook coonect and update
 
-    time= 'time_range={"since":"2020-05-01","until":"'+str(datetime.date.today())+'"}&time_increment=1'
+    time= 'time_range={"since":"2020-04-25","until":"'+str(datetime.date.today())+'"}&time_increment=1'
     fields = 'fields=campaign_name,ad_id,campaign_id,spend,actions'
     base_url= f"https://graph.facebook.com/v6.0/act_124276768426220/insights?limit=10000&{time}&{fields}&level=ad&{token}"
     results = requests.get(base_url)
@@ -102,7 +103,7 @@ def refresh_fb():
     fb_df['spend'] =  fb_df['spend'].apply(float)
     fb_df = fb_df.drop(columns = 'actions')
     fb_df = fb_df.drop(columns = 'date_stop')
-
+    print('writeon fb')
     urls = get_url_fb()
     report_matcher = get_match_table()
     ids = {i:urls[report_matcher[i]] if report_matcher[i] in urls else print(i) for i in report_matcher}

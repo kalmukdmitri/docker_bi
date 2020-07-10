@@ -36,7 +36,8 @@ def refresh_personal_reports():
         showcase.vitrins,
         showcase.domain,
         ifnull(reg_sourse.reg_donner, 'Прямая') as reg_donner,
-        reg_sourse.reg_donner_id
+        reg_sourse.reg_donner_id,
+        concat("https://workface.ru/ru/company/",company_id) as company_url
     FROM `users`as users
 
     left join (

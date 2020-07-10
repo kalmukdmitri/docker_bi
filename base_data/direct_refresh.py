@@ -91,7 +91,7 @@ def dedouble_dict_table(table):
             rows_dict[table_id] = i[3:]
     return [list(i)+e[:-2] for i,e in rows_dict.items()]
 
-def get_match_table( ym_class, date_st = '2020-01-01'):
+def get_match_table( ym_class, date_st = '2020-04-25'):
     dimestions = "ym:s:<attribution>DirectClickOrder,ym:s:<attribution>DirectPhraseOrCond,ym:s:UTMSource,ym:s:UTMCampaign,ym:s:UTMTerm"
     metrics = "ym:s:visits"
     x = ym_class.get_data( dimestions, metrics, date_st)

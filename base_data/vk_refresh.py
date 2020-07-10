@@ -76,7 +76,7 @@ def vk_refresh():
     campaigns = get_vk(method = 'ads.getCampaigns', params= 'account_id=1604608801')
     camps_ids = ",".join([str(i['id']) for i in campaigns['response']])
     date_to = str(datetime.date.today())
-    get_campaign_stats = get_vk(params = f'ids_type=campaign&date_from=2020-01-01&date_to={date_to}&period=day&account_id=1604608801&ids={camps_ids}')
+    get_campaign_stats = get_vk(params = f'ids_type=campaign&date_from=2020-04-25&date_to={date_to}&period=day&account_id=1604608801&ids={camps_ids}')
     campaigns_dict = {str(i['id']):i['name'] for i in campaigns['response']}
     time.sleep(1)
     vk_table = campaign_to_table(get_campaign_stats,campaigns_dict)

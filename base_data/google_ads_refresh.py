@@ -6,7 +6,7 @@ import datetime
 from apiclient.discovery import build
 from google.cloud import bigquery
 from google.oauth2 import service_account
-
+print('writeon2')
 class ga_connect:
     #   Задаём ключ из файла
     credentials = service_account.Credentials.from_service_account_file('kalmuktech-5b35a5c2c8ec.json',)
@@ -90,13 +90,14 @@ def df_proc(frame):
     return frame
 
 def ga_refresh():
-    date_start = '2020-01-01'
+    date_start = '2020-04-25'
         
     i_cap_GA_old = ga_connect('202103298')
     i_cap_DF_old=i_cap_GA_old.extract_expanse(date_start)
     i_cap_DF_old = df_proc(i_cap_DF_old)
     i_cap_DF_old['Site'] = 'i-cap'
-
+    
+    date_start = '2020-01-01'
     Workface = ga_connect('195038144')
     Workface_df=Workface.extract_expanse(date_start)
     Workface_df = df_proc(Workface_df)
