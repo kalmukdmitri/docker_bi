@@ -218,8 +218,6 @@ def refresh_personal_reports():
     LEft join (SELECT sum(otruzka_sum)/100 as sum, phone as phone_ms FROM `kalmuktech.marketing_bi.ms_sold` group by phone) as ms_sold on ms_sold.phone_ms = tbl.phone
     )
 
-
-
     union ALL
 
     SELECT
