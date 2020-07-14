@@ -96,14 +96,14 @@ def refresh_fb():
     base_url= f"https://graph.facebook.com/v6.0/act_124276768426220/insights?limit=10000&{time}&{fields}&level=ad&{token}"
     results = requests.get(base_url)
     data = json.loads((results.text))
-    print(len(data['data']))
+
     fb_df = pandas.DataFrame(data['data'])
     fb_df["lead"] =  fb_df['actions'].apply(fb_add_x, fld = 'lead')
     fb_df['click'] =  fb_df['actions'].apply(fb_add_x, fld = 'link_click')
     fb_df['spend'] =  fb_df['spend'].apply(float)
     fb_df = fb_df.drop(columns = 'actions')
     fb_df = fb_df.drop(columns = 'date_stop')
-    print('writeon fb')
+    
     urls = get_url_fb()
     report_matcher = get_match_table()
     ids = {i:urls[report_matcher[i]] if report_matcher[i] in urls else print(i) for i in report_matcher}

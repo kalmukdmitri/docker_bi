@@ -60,9 +60,10 @@ except:
     
 try:
     bi_report_refresh()
-    print('BI success')
+    print('BI success and cool')
 except:
     print('BI Fail')
+    
     
 try:
     refresh_personal_reports()
