@@ -147,6 +147,27 @@ def refresh_personal_reports():
         """
     regs_query = query_df(query_compaines,token['wf_base'])
     wf_regs_table.replace(regs_query)
+    
+    q_add_visits = """
+    SELECT 
+    user_id,
+    notif_mail,
+    phone,
+    reg_date,
+    last_dt,
+    visits as visit_count,
+    vitrins,
+    domain,
+    reg_donner,
+    reg_donner_id,
+    company_url
+    FROM `kalmuktech.wf_bi.report_regs` as regs
+    left join (SELECT user_id as users_v, ifnull(sum(ga_sessions),0) as visits FROM `kalmuktech.wf_bi.users_id`  as u 
+    left join `kalmuktech.wf_bi.user_sess`  as uses on u.u_id = uses.ga_dimension1
+    group by user_id) as user_visits on user_visits.users_v = regs.user_id
+    """
+    res_plus_visits = wf_regs_table.df_query(q_add_visits)
+    wf_regs_table.replace(res_plus_visits)
 
     query = """
     SELECT
