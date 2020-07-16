@@ -24,6 +24,7 @@ def query_df(qry, token):
 def refresh_personal_reports():
 
     token = get_tokens()
+    
     wf_regs_table = gbq_pd('report_regs', datasetId = 'wf_bi')
     query_compaines = """
         SELECT 
@@ -83,7 +84,28 @@ def refresh_personal_reports():
     regs_query = query_df(query_compaines,token['wf_base'])
     wf_regs_table.replace(regs_query)
 
-    wf_regs_table = gbq_pd('report_virs', datasetId = 'wf_bi')
+    q_add_visits = """
+    SELECT 
+    user_id,
+    notif_mail,
+    phone,
+    reg_date,
+    last_dt,
+    visits as visit_count,
+    vitrins,
+    domain,
+    reg_donner,
+    reg_donner_id,
+    company_url
+    FROM `kalmuktech.wf_bi.report_regs` as regs
+    left join (SELECT user_id as users_v, ifnull(sum(ga_sessions),0) as visits FROM `kalmuktech.wf_bi.users_id`  as u 
+    left join `kalmuktech.wf_bi.user_sess`  as uses on u.u_id = uses.ga_dimension1
+    group by user_id) as user_visits on user_visits.users_v = regs.user_id
+    """
+    res_plus_visits = wf_regs_table.df_query(q_add_visits)
+    wf_regs_table.replace(res_plus_visits)
+    
+    wf_vitr_table = gbq_pd('report_virs', datasetId = 'wf_bi')
     query_compaines = """
     SELECT 
         FROM_UNIXTIME(create_date) as date,
@@ -146,30 +168,11 @@ def refresh_personal_reports():
         ) as showcase_info on showcase_info.sh_id = showcase.showcase_id
         """
     regs_query = query_df(query_compaines,token['wf_base'])
-    wf_regs_table.replace(regs_query)
+    wf_vitr_table.replace(regs_query)
     
-    q_add_visits = """
-    SELECT 
-    user_id,
-    notif_mail,
-    phone,
-    reg_date,
-    last_dt,
-    visits as visit_count,
-    vitrins,
-    domain,
-    reg_donner,
-    reg_donner_id,
-    company_url
-    FROM `kalmuktech.wf_bi.report_regs` as regs
-    left join (SELECT user_id as users_v, ifnull(sum(ga_sessions),0) as visits FROM `kalmuktech.wf_bi.users_id`  as u 
-    left join `kalmuktech.wf_bi.user_sess`  as uses on u.u_id = uses.ga_dimension1
-    group by user_id) as user_visits on user_visits.users_v = regs.user_id
-    """
-    res_plus_visits = wf_regs_table.df_query(q_add_visits)
-    wf_regs_table.replace(res_plus_visits)
 
-    query = """
+
+    query_ann = """
     SELECT
     utm_source,
     utm_campaign,
@@ -299,8 +302,7 @@ def refresh_personal_reports():
         AS colibr_mail
     ON
         colibr_mail.email = lead_st.ml)
-
-    
+        
     union ALL
 
     SELECT
@@ -320,7 +322,7 @@ def refresh_personal_reports():
     """
 
     Ann_report = gbq_pd('Ann_report', 'marketing_bi')
-    dates_str = Ann_report.df_query(query)
+    dates_str = Ann_report.df_query(query_ann)
     import pandas
     def transform_sourse(data):
         dict_of_dims_date = []
