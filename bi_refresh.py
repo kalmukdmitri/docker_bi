@@ -6,8 +6,11 @@ from base_data.direct_refresh import *
 from base_data.callibri import *
 from base_data.GA_cookie import *
 from base_data.amo_tilda_reshresh import *
+from base_data.wf_amo import *
 from refresh_reports import *
 from personal_reports import *
+from wf_cookies import *
+
 
 try:
     y_direct_refresh()
@@ -63,10 +66,23 @@ try:
     print('BI success and cool')
 except:
     print('BI Fail')
-    
+
+try:
+    wf_amo_refresh()
+    print('wf_amo success and cool')
+except:
+    print('wf_amo Fail')
     
 try:
     refresh_personal_reports()
     print('personal success')
 except:
     print('personal fail')
+    
+try:
+    refresh_wf_ga_tables() 
+    print('wf_cookies success')
+except:
+    print('wf_cookies fail')   
+    
+  
