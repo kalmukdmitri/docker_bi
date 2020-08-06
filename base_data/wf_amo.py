@@ -357,24 +357,52 @@ def wf_amo_refresh():
 
     second_report = gbq_pd('ann_report', datasetId= 'wf_bi')
     query_ann = """
-    select concat("https://workface.amocrm.ru/leads/detail/",lead_id) as lead_url,
-    concat("https://workface.amocrm.ru/contacts/detail/",c) as contact_url,
-    amo_date,
-    amo_phone,
-    reg_date,
-    registred
-    from (select c, created_at as amo_date,  phn as amo_phone, date as reg_date , if( user_id is not null, 1,0 ) as registred from
-    (SELECT
+    SELECT
+  CONCAT("https://workface.amocrm.ru/leads/detail/",lead_id) AS lead_url,
+  CONCAT("https://workface.amocrm.ru/contacts/detail/",c) AS contact_url,
+  amo_date,
+  amo_phone,
+  reg_date,
+  registred,
+  case
+    when user_url > 0 then CONCAT("https://workface.ru/ru/company/",user_url)
+  else
+    '0'
+  end as user_url
+FROM (
+  SELECT
+    c,
+    created_at AS amo_date,
+    phn AS amo_phone,
+    date AS reg_date,
+  IF
+    ( user_id IS NOT NULL,
+      1,
+      0 ) AS registred,
+  IF
+    ( company_id IS NOT NULL,
+     company_id,
+      0 ) AS user_url
+  FROM (
+    SELECT
       conts_id AS c,
       created_at,
-      email as a_email,  
-      phone as phn
+      email AS a_email,
+      phone AS phn
     FROM
       `kalmuktech.wf_bi.AMO_contacts`
-    where phone != 'None') as amo_c
-    left join `kalmuktech.wf_bi.wf_users` as users on users.phone = amo_c.phn) as contacts
-    left join `kalmuktech.wf_bi.AMO_leads` as AMO_leads on AMO_leads.contact_id = contacts.c
-    order by registred desc
+    WHERE
+      phone != 'None') AS amo_c
+  LEFT JOIN
+    `kalmuktech.wf_bi.wf_users` AS users
+  ON
+    users.phone = amo_c.phn) AS contacts
+LEFT JOIN
+  `kalmuktech.wf_bi.AMO_leads` AS AMO_leads
+ON
+  AMO_leads.contact_id = contacts.c
+ORDER BY
+  registred DESC
     """
     ann_report = second_report.df_query(query_ann)
     second_report.replace(ann_report)
