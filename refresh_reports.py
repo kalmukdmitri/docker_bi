@@ -459,7 +459,58 @@ def bi_report_refresh():
     where utm_campaign = '(not set)'
     
     UNION ALL
+    
     select * from  `kalmuktech.old_ads.old_data_report` 
+    
+    UNION ALL
+    
+    SELECT
+      'Неопределено AMO i-cap' AS camp,
+      0 as cost,
+      0 AS clicks,
+      datetime_creat AS date,
+      'Неопределено' AS systems,
+      'Неопределено'AS utm_source,
+      'Неопределено' AS utm_campaign,
+      'none' AS utm_term,
+      COUNTIF(status = 'Мусор') AS failed,
+      COUNTIF(status != 'Мусор') AS normal,
+      SUM(CASE
+          WHEN status = 'Успешно реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS sold,
+      SUM(CASE
+          WHEN status != 'Успешно реализовано' AND status != 'Мусор' AND status != 'Закрыто и не реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS insale,
+      0 AS sum
+    FROM
+      `kalmuktech.marketing_bi.base_amo_leads`
+    WHERE
+      contact_id IN (
+      SELECT
+        DISTINCT conts_id
+      FROM
+        `kalmuktech.marketing_bi.base_amo_contacts`
+      WHERE
+        phone NOT IN (
+        SELECT
+          ifnull( phone,
+            '') AS phone
+        FROM
+          `kalmuktech.marketing_bi.callibri_data` )
+        AND email NOT IN (
+        SELECT
+          ifnull( email,
+            '') AS email
+        FROM
+          `kalmuktech.marketing_bi.callibri_data` a) )
+    GROUP BY
+      4
     """
     report_expense = gbq_pd( 'report', 'BI_Dataset')
     report_df = report_expense.df_query(join_table_gains_query)
