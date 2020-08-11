@@ -12,19 +12,30 @@ from oauth2client.service_account import ServiceAccountCredentials
 def bi_report_refresh():
     query = """
     SELECT
-    utm_source,
-    utm_campaign,
-    utm_term,
-    date(date) as date,
-    COUNT(conts_id) AS all_leads,
-    COUNTIF(status = 'Мусор') AS failed,
-    COUNTIF(status != 'Мусор') AS normal,
-    sum(CASE when status = 'Успешно реализовано' then sale ELSE 0 end) as sold,
-    sum(CASE when status != 'Успешно реализовано' 
-    and status != 'Мусор' 
-    and status != 'Закрыто и не реализовано' then sale ELSE 0 end) as insale,
-    ifnull(sum(sum), 0) as sum
-    from  (select conts_id as conts_id,
+      utm_source,
+      utm_campaign,
+      utm_term,
+      DATE(date) AS date,
+      COUNT(conts_id) AS all_leads,
+      COUNTIF(status = 'Мусор') AS failed,
+      COUNTIF(status != 'Мусор') AS normal,
+      SUM(CASE
+          WHEN status = 'Успешно реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS sold,
+      SUM(CASE
+          WHEN status != 'Успешно реализовано' AND status != 'Мусор' AND status != 'Закрыто и не реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS insale,
+      ifnull(SUM(sum),
+        0) AS sum
+    FROM (
+      SELECT
+        conts_id AS conts_id,
         phone,
         status,
         utm_source,
@@ -33,81 +44,96 @@ def bi_report_refresh():
         date,
         sale,
         sum
-    from 
-    (SELECT
-        DISTINCT (conts_id) as conts_id,
-        phone,
-        status,
-        utm_source,
-        utm_campaign,
-        utm_term,
-        date,
-        sale
-    FROM (
+      FROM (
         SELECT
-        conts_id,
-        status,
-        sale,
-        phone AS ml
-        FROM
-        kalmuktech.marketing_bi.base_amo_leads AS AMO_leads
-        JOIN
-        kalmuktech.marketing_bi.base_amo_contacts AS cncts
+          DISTINCT (conts_id) AS conts_id,
+          phone,
+          status,
+          utm_source,
+          utm_campaign,
+          utm_term,
+          date,
+          sale
+        FROM (
+          SELECT
+            conts_id,
+            status,
+            sale,
+            phone AS ml
+          FROM
+            kalmuktech.marketing_bi.base_amo_leads AS AMO_leads
+          JOIN
+            kalmuktech.marketing_bi.base_amo_contacts AS cncts
+          ON
+            cncts.conts_id = AMO_leads.contact_id
+          WHERE
+            phone != 'None') AS lead_st
+        JOIN (
+          SELECT
+            MIN(ga_date) AS date,
+            phone,
+            ga_source AS utm_source,
+            ga_campaign AS utm_campaign,
+            ga_keyword AS utm_term,
+          FROM (
+            SELECT
+              phone,
+              metrika_client_id
+            FROM
+              `kalmuktech.marketing_bi.callibri_data` AS DATA
+            WHERE
+              metrika_client_id IS NOT NULL
+              AND phone IS NOT NULL ) AS DATA
+          JOIN
+            `kalmuktech.marketing_bi.base_ga_cookie` AS ga
+          ON
+            DATA.metrika_client_id = ga.ga_dimension1
+          GROUP BY
+            2,
+            3,
+            4,
+            5 ) AS colibr_mail
         ON
-        cncts.conts_id = AMO_leads.contact_id
-        WHERE
-        phone != 'None') AS lead_st
-    JOIN (
+          colibr_mail.phone = lead_st.ml) AS tbl
+      LEFT JOIN (
         SELECT
-    min(ga_date) as date,
-    phone,
-    ga_source as utm_source,
-    ga_campaign as utm_campaign,
-    ga_keyword as utm_term,
-    FROM (
-    SELECT
-        phone,
-        metrika_client_id
-    FROM
-        `kalmuktech.marketing_bi.callibri_data` AS data
-    WHERE
-        metrika_client_id IS NOT NULL
-        AND phone IS NOT NULL ) AS data
-    JOIN
-    `kalmuktech.marketing_bi.base_ga_cookie` AS ga
-    ON
-    data.metrika_client_id = ga.ga_dimension1
-    group by 
-    2,3,4,5
-    ) AS colibr_mail
-    ON
-        colibr_mail.phone = lead_st.ml) as tbl
-    LEft join (SELECT sum(otruzka_sum)/100 as sum, phone as phone_ms FROM `kalmuktech.marketing_bi.ms_sold` group by phone) as ms_sold on ms_sold.phone_ms = tbl.phone
-    )
+          SUM(otruzka_sum)/100 AS sum,
+          phone AS phone_ms
+        FROM
+          `kalmuktech.marketing_bi.ms_sold`
+        GROUP BY
+          phone) AS ms_sold
+      ON
+        ms_sold.phone_ms = tbl.phone )
     GROUP BY
-    1,
-    2,
-    3,
-    4
-
-
-    union ALL
-
+      1,
+      2,
+      3,
+      4
+    UNION ALL
     SELECT
-    utm_source,
-    utm_campaign,
-    utm_term,
-    date(date) as date,
-    COUNT(conts_id) AS all_leads,
-    COUNTIF(status = 'Мусор') AS failed,
-    COUNTIF(status != 'Мусор') AS normal,
-    sum(CASE when status = 'Успешно реализовано' then sale ELSE 0 end) as sold,
-    sum(CASE when status != 'Успешно реализовано' 
-    and status != 'Мусор' 
-    and status != 'Закрыто и не реализовано' then sale ELSE 0 end) as insale,
-    0 as sum
+      utm_source,
+      utm_campaign,
+      utm_term,
+      DATE(date) AS date,
+      COUNT(conts_id) AS all_leads,
+      COUNTIF(status = 'Мусор') AS failed,
+      COUNTIF(status != 'Мусор') AS normal,
+      SUM(CASE
+          WHEN status = 'Успешно реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS sold,
+      SUM(CASE
+          WHEN status != 'Успешно реализовано' AND status != 'Мусор' AND status != 'Закрыто и не реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS insale,
+      0 AS sum
     FROM (
-    SELECT
+      SELECT
         DISTINCT (conts_id),
         email,
         status,
@@ -116,75 +142,127 @@ def bi_report_refresh():
         utm_term,
         date,
         sale
-    FROM (
+      FROM (
         SELECT
-        conts_id,
-        status,
-        sale,
-        email AS ml
+          conts_id,
+          status,
+          sale,
+          email AS ml
         FROM
-        kalmuktech.marketing_bi.base_amo_leads AS AMO_leads
+          kalmuktech.marketing_bi.base_amo_leads AS AMO_leads
         JOIN
-        kalmuktech.marketing_bi.base_amo_contacts AS cncts
+          kalmuktech.marketing_bi.base_amo_contacts AS cncts
         ON
-        cncts.conts_id = AMO_leads.contact_id
+          cncts.conts_id = AMO_leads.contact_id
         WHERE
-        email != 'None') AS lead_st
-    JOIN (
+          email != 'None') AS lead_st
+      JOIN (
         SELECT
-    min(ga_date) as date,
-    email,
-    ga_source as utm_source,
-    ga_campaign as utm_campaign,
-    ga_keyword as utm_term,
-    FROM (
-    SELECT
-        email,
-        metrika_client_id
-    FROM
-        `kalmuktech.marketing_bi.callibri_data` AS data
-    WHERE
-        metrika_client_id IS NOT NULL
-        and email IS NOT NULL
-        AND phone IS NULL ) AS data
-    JOIN
-    `kalmuktech.marketing_bi.base_ga_cookie` AS ga
-    ON
-    data.metrika_client_id = ga.ga_dimension1
-    group by 
-    2,3,4,5) 
-        AS colibr_mail
-    ON
+          MIN(ga_date) AS date,
+          email,
+          ga_source AS utm_source,
+          ga_campaign AS utm_campaign,
+          ga_keyword AS utm_term,
+        FROM (
+          SELECT
+            email,
+            metrika_client_id
+          FROM
+            `kalmuktech.marketing_bi.callibri_data` AS DATA
+          WHERE
+            metrika_client_id IS NOT NULL
+            AND email IS NOT NULL
+            AND phone IS NULL ) AS DATA
+        JOIN
+          `kalmuktech.marketing_bi.base_ga_cookie` AS ga
+        ON
+          DATA.metrika_client_id = ga.ga_dimension1
+        GROUP BY
+          2,
+          3,
+          4,
+          5) AS colibr_mail
+      ON
         colibr_mail.email = lead_st.ml)
-
     GROUP BY
-    1,
-    2,
-    3,
-    4
+      1,
+      2,
+      3,
+      4
+      
+    UNION ALL
     
-    union ALL
+    SELECT
+      ga_source,
+      ga_campaign,
+      ga_keyword,
+      DATE(ga_date) AS date,
+      COUNT(id) AS all_leads,
+      COUNTIF(status = 'Мусор') AS failed,
+      COUNTIF(status != 'Мусор') AS normal,
+      SUM(CASE
+          WHEN status = 'Успешно реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS sold,
+      SUM(CASE
+          WHEN status != 'Успешно реализовано' AND status != 'Мусор' AND status != 'Закрыто и не реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS insale,
+      0 AS sum
+    FROM
+      kalmuktech.marketing_bi.base_tilda_forms AS tilda
+    JOIN
+      `kalmuktech.marketing_bi.base_ga_cookie` AS ga
+    ON
+      tilda.cookie = ga.ga_dimension1
+    GROUP BY
+      1,
+      2,
+      3,
+      4
+
+    UNION ALL
 
     SELECT
-    ga_source,
-    ga_campaign,
-    ga_keyword,
-    DATE(ga_date) AS date,
-    COUNT(id) AS all_leads,
-    COUNTIF(status = 'Мусор') AS failed,
-    COUNTIF(status != 'Мусор') AS normal,
-    sum(CASE when status = 'Успешно реализовано' then sale ELSE 0 end) as sold,
-    sum(CASE when status != 'Успешно реализовано' 
-    and status != 'Мусор' 
-    and status != 'Закрыто и не реализовано' then sale ELSE 0 end) as insale,
-    0 as sum
+      ga_source,
+      ga_campaign,
+      ga_keyword,
+      DATE(ga_date) AS date,
+      COUNT(cont_id) AS all_leads,
+      COUNTIF(status = 'Мусор') AS failed,
+      COUNTIF(status != 'Мусор') AS normal,
+      SUM(CASE
+          WHEN status = 'Успешно реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS sold,
+      SUM(CASE
+          WHEN status != 'Успешно реализовано' AND status != 'Мусор' AND status != 'Закрыто и не реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS insale,
+      0 AS sum
     FROM
-    kalmuktech.marketing_bi.base_tilda_forms as tilda
+      `kalmuktech.marketing_bi.chats_data` AS chat
     JOIN
-    `kalmuktech.marketing_bi.base_ga_cookie` AS ga
+      `kalmuktech.marketing_bi.base_ga_cookie` AS ga
     ON
-    tilda.cookie = ga.ga_dimension1
-    group by 1,2,3,4
+      chat.ym_cookie = ga.ga_dimension1
+    LEFT JOIN
+      `kalmuktech.marketing_bi.base_amo_leads` AS leads
+    ON
+      leads.contact_id = chat.cont_id
+    GROUP BY
+      1,
+      2,
+      3,
+      4
     """
 
     time.sleep(2)
