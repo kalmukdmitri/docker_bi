@@ -263,6 +263,56 @@ def bi_report_refresh():
       2,
       3,
       4
+     
+    UNION ALL
+    SELECT
+      ga_source AS utm_source,
+      ga_campaign AS utm_campaign,
+      ga_keyword AS utm_term,
+      DATE( ga.ga_date ) AS date,
+      COUNT(conts_id) AS all_leads,
+      COUNTIF(status = 'Мусор') AS failed,
+      COUNTIF(status != 'Мусор') AS normal,
+      SUM(CASE
+          WHEN status = 'Успешно реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS sold,
+      SUM(CASE
+          WHEN status != 'Успешно реализовано' AND status != 'Мусор' AND status != 'Закрыто и не реализовано' THEN sale
+        ELSE
+        0
+      END
+        ) AS insale,
+      0 AS sum
+    FROM
+      kalmuktech.marketing_bi.base_amo_contacts AS c
+    JOIN
+      kalmuktech.marketing_bi.base_amo_leads AS l
+    ON
+      l.contact_id = c.conts_id
+    INNER JOIN
+      `kalmuktech.marketing_bi.wf_buyers_icap` AS w
+    ON
+      w.phone = c.phone
+    LEFT JOIN
+      `kalmuktech.wf_bi.users_id` AS wf_u
+    ON
+      wf_u.user_id = w.user_id
+    INNER JOIN
+      kalmuktech.marketing_bi.shp_icap_wf_cooks AS wc
+    ON
+      wc.ga_dimension1 = wf_u.u_id
+    JOIN
+      `kalmuktech.marketing_bi.base_ga_cookie` AS ga
+    ON
+      wc.ga_dimension2 = ga.ga_dimension1
+    GROUP BY
+      1,
+      2,
+      3,
+      4
     """
 
     time.sleep(2)
