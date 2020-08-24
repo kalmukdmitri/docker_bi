@@ -10,6 +10,8 @@ from google.cloud import bigquery
 from oauth2client.service_account import ServiceAccountCredentials
 
 def bi_report_refresh():
+    log = ""
+    
     query = """
     SELECT
       utm_source,
@@ -336,6 +338,8 @@ def bi_report_refresh():
         return pandas.DataFrame(dict_of_dims_date)
     dates_str = transform_sourse(dates_str)
     callibri_table.replace(dates_str)
+    
+    log += f"По таблице predifined_leads_data_cookie обновилось {len(dates_str)} строк \n"
 
     join_table_gains_query  = """
     SELECT
@@ -582,3 +586,7 @@ def bi_report_refresh():
     report_df['project'] = report_df['camp'].apply(get_project)
     report_expense = gbq_pd( 'report', 'BI_Dataset')
     report_expense.replace(report_df)
+    
+    log += f"По таблице report обновилось {len(report_df)} строк \n"
+    
+    return log
