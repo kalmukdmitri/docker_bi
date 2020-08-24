@@ -11,6 +11,7 @@ from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 
 def Amo_refresh():
+    log = ""
     SCOPES = ['https://www.googleapis.com/auth/drive',
             'https://www.googleapis.com/auth/documents']
 
@@ -90,12 +91,10 @@ def Amo_refresh():
             while i:
                 c+=1
                 offset = c * 500
-                print(f'{params}?limit_rows=500&limit_offset={offset}')
                 params_url = f'{params}?limit_rows=500&limit_offset={offset}'
                 result = self.get_data(params_url)['_embedded']['items']
                 res.extend(result)
                 len_res= len(result)
-                print(len_res)
                 if c == 100 or len_res < 500: 
                     i = False
             return res
@@ -195,6 +194,8 @@ def Amo_refresh():
 
     time.sleep(10)
     forms_gbq.replace(forms_df)
+    
+    log += f"По таблице base_tilda_forms обновилось {len(forms_df)} строк \n"
 
     leads_processed = []
     [leads_processed.extend(parse_amo_leads(i,pips)) for i in leads]
@@ -205,6 +206,8 @@ def Amo_refresh():
                                         'status', 'company_id' , 'contact_id'])
 
     leads_processed_gbq.replace(leads_processed_df)
+    
+    log += f"По таблице base_amo_leads обновилось {len(leads_processed_df)} строк \n"
     def proccess_unsort(unsl, pipeline):
         
         uns_lead_date =  datetime.datetime.fromtimestamp(unsl['created_at']),
@@ -264,6 +267,8 @@ def Amo_refresh():
                                         'dtkt_key','email'])
     unsort_leads_processed_gbq = gbq_pd('base_amo_unsort', datasetId = 'marketing_bi')
     unsort_leads_processed_gbq.add(unsort_leads_processed_df, if_exists = 'replace')
+    
+    log += f"По таблице base_amo_unsort обновилось {len(unsort_leads_processed_df)} строк \n"
 
     def number_fix(number):
         number  = "".join([i for i in number if i.isnumeric()])
@@ -328,3 +333,64 @@ def Amo_refresh():
                                         'phone'])
     AMO_contacts_gbq = gbq_pd('base_amo_contacts', datasetId = 'marketing_bi')
     AMO_contacts_gbq.replace(contacts_df)
+    
+    log += f"По таблице base_amo_contacts обновилось {len(contacts_df)} строк \n"
+    
+    def get(url):
+        url = {}
+        for i in url[1:].split("&"):
+            if '=' in i:
+                tag = i.split('=')
+                url[tag[0]] = tag[1]
+        tags = ['utm_source', 'utm_medium','utm_campaign']
+        utm_source = url['utm_source'] if 'utm_source' in url else 'None'
+        utm_medium = url['utm_medium'] if 'utm_medium' in url else 'None'
+        utm_campaign = url['utm_campaign'] if 'utm_campaign' in url else 'None'
+
+        return [utm_source, utm_medium, utm_campaign]
+
+    def parse_c2d_cnt(cont):
+        contacts = []
+
+        if 'custom_fields' in cont:
+            custom_fields = {i['id']: i['values'] for i in cont['custom_fields']}
+            if 86249 in custom_fields and 679209 in custom_fields and 679207 not in custom_fields:
+                ym_cookie = custom_fields[679209][0]['value']
+                sorse = custom_fields[86249][0]['value']
+                url = {}
+                for i in sorse[1:].split("&"):
+                    if '=' in i:
+                        tag = i.split('=')
+                        url[tag[0]] = tag[1]
+                tags = ['utm_source', 'utm_medium','utm_campaign', 'utm_term']
+                utm_source = url['utm_source'] if 'utm_source' in url else 'None'
+                utm_medium = url['utm_medium'] if 'utm_medium' in url else 'None'
+                utm_campaign = url['utm_campaign'] if 'utm_campaign' in url else 'None'
+                utm_term = url['utm_term'] if 'utm_term' in url else 'None'
+
+                return [cont['id'],ym_cookie,utm_source, utm_medium, utm_campaign,utm_term]
+        return []
+
+    all_contacts = []
+
+    for i in contacts:
+        all_contacts.extend(parse_amo_contacts(i))
+
+    chat_data= [(parse_c2d_cnt(i)) for i in contacts if  parse_c2d_cnt(i) != []]
+    chat_pd = pandas.DataFrame(chat_data, columns = [
+                                             'cont_id',
+                                             'ym_cookie',
+                                             'utm_source',
+                                             'utm_medium',
+                                             'utm_campaign',
+                                             'utm_term'])
+
+    chat_cnts_table = gbq_pd( 'chats_data', 'marketing_bi')
+
+    chat_pd['cont_id'] = chat_pd['cont_id'].apply(lambda x: float(x))
+
+    chat_cnts_table.replace(chat_pd)
+    
+    log += f"По таблице chats_data обновилось {len(chat_pd)} строк \n"
+    
+    return log
