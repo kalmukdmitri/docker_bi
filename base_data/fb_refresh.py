@@ -91,27 +91,45 @@ def refresh_fb():
 
     # Facebook coonect and update
 
-    time= 'time_range={"since":"2020-04-25","until":"'+str(datetime.date.today())+'"}&time_increment=1'
-    fields = 'fields=campaign_name,ad_id,campaign_id,spend,actions'
-    base_url= f"https://graph.facebook.com/v6.0/act_124276768426220/insights?limit=10000&{time}&{fields}&level=ad&{token}"
-    results = requests.get(base_url)
-    data = json.loads((results.text))
+    date_lst = []
+    dates = datetime.date.today()
 
-    fb_df = pandas.DataFrame(data['data'])
-    fb_df["lead"] =  fb_df['actions'].apply(fb_add_x, fld = 'lead')
-    fb_df['click'] =  fb_df['actions'].apply(fb_add_x, fld = 'link_click')
-    fb_df['spend'] =  fb_df['spend'].apply(float)
-    fb_df = fb_df.drop(columns = 'actions')
-    fb_df = fb_df.drop(columns = 'date_stop')
-    
-    urls = get_url_fb()
-    report_matcher = get_match_table()
-    ids = {i:urls[report_matcher[i]] if report_matcher[i] in urls else print(i) for i in report_matcher}
-    urls_list = [ids[i]  if i in ids else None for i in fb_df["ad_id"]]
-    fb_df['source'], fb_df['capmapaign'] = utm_to_colums_full(urls_list)
+    while '2020-04-25' < str(dates):
 
-    fb_df['date_start'] = fb_df['date_start'].apply(lambda x : pandas.Timestamp(datetime.datetime.strptime(x,'%Y-%m-%d')))
-    return fb_df
+        date2 = dates - datetime.timedelta(days = 30)
+
+        date_lst.append([date2, dates])
+        dates = date2 - datetime.timedelta(days = 1)
+
+    date_lst = date_lst[::-1]
+
+    fb_dfs = []
+    for i in date_lst:
+        time= 'time_range={"since":"'+str(i[0])+'","until":"'+str(i[1])+'"}&time_increment=1'
+        fields = 'fields=campaign_name,ad_id,campaign_id,spend,actions'
+        base_url= f"https://graph.facebook.com/v6.0/act_124276768426220/insights?limit=10000&{time}&{fields}&level=ad&{token}"
+        results = requests.get(base_url)
+        data = json.loads((results.text))
+
+        fb_df = pandas.DataFrame(data['data'])
+        fb_df["lead"] =  fb_df['actions'].apply(fb_add_x, fld = 'lead')
+        fb_df['click'] =  fb_df['actions'].apply(fb_add_x, fld = 'link_click')
+        fb_df['spend'] =  fb_df['spend'].apply(float)
+        fb_df = fb_df.drop(columns = 'actions')
+        fb_df = fb_df.drop(columns = 'date_stop')
+
+        urls = get_url_fb()
+        report_matcher = get_match_table()
+        ids = {i:urls[report_matcher[i]] if report_matcher[i] in urls else print(i) for i in report_matcher}
+        urls_list = [ids[i]  if i in ids else None for i in fb_df["ad_id"]]
+        fb_df['source'], fb_df['capmapaign'] = utm_to_colums_full(urls_list)
+
+        fb_df['date_start'] = fb_df['date_start'].apply(lambda x : pandas.Timestamp(datetime.datetime.strptime(x,'%Y-%m-%d')))
+        fb_dfs.append(fb_df)
+
+    fb_dataframe_full = pandas.concat(fb_dfs, axis=0, join='outer', ignore_index=True, keys=None,
+                levels=None, names=None, verify_integrity=False, copy=True)
+    return fb_dataframe_full
 
 if __name__ == "__main__":
     refresh_fb()

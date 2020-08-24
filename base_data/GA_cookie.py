@@ -84,7 +84,5 @@ def ga_cookie_refresh():
     i_cap_DF_GA = df_proc(i_cap_DF_GA)
     df_cooks = dedublicate_table(i_cap_DF_GA)
     df_cooks = df_cooks.drop(columns = ['Index', 'ga_sessions'])
-
-    ga_table = gbq_pd('base_ga_cookie', 'marketing_bi')
-    ga_table.replace(df_cooks)
+    
     return df_cooks

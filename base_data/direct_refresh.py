@@ -26,7 +26,6 @@ class direct_acc:
         base_url +=f'&date1={date1}'
         base_url +=f'&date2={date2}'
         base_url += f"&direct_client_logins={self.direct_client_logins}"
-        print(base_url)
         metrica_answer = requests.get(base_url, headers=self.headers)
         results = json.loads(metrica_answer.text)
         return results
@@ -65,18 +64,14 @@ class direct_acc:
         dates = self.get_dates_from(dt_str)
         end_lst = []
         if len(dates) == 0: 
-            print("Данные актуальны")
             return []
-        print(f"Нужны данные за {len(dates)} дат")
-        req_counter = 0
+
         for date in dates:
             row = self.get_data(dimestions = dimestions,
                                          metrics = metrics,
                                          date1 = date,
                                          date2 = date)
-            if req_counter % 20 == 0:
-                print(f"Осталось {len(dates)-req_counter}")
-            req_counter+=1
+
             end_lst.extend(data_procces(row))
         return end_lst
 
@@ -96,14 +91,11 @@ def get_match_table( ym_class, date_st = '2020-04-25'):
     metrics = "ym:s:visits"
     x = ym_class.get_data( dimestions, metrics, date_st)
     y = ym_class.proccess_direct_data(x)
-    print(len(y))
     header_str = dimestions+","+metrics
-    
     header_str = header_str.replace(":","_")
     header_str = header_str.replace("<attribution>","")
     header_str = header_str.replace("<currency>","")
     pure_head_table = dedouble_dict_table(y)
-    print(len(pure_head_table))
     columns_headers = header_str.split(",")
     return pandas.DataFrame(pure_head_table, columns = columns_headers[:2]+columns_headers[-3:-1])
 
@@ -137,7 +129,6 @@ def add_utm_to_df_yandex(dt_frm,utms):
 
 # Подключаемся с метрике и забираем данные
 def y_direct_refresh():
-    start_time = datetime.datetime.today()
     
     from doc_token import get_tokens
     token = get_tokens()
@@ -150,7 +141,6 @@ def y_direct_refresh():
         q_last_date = "SELECT date(max(date)) as last_date  FROM `kalmuktech.marketing_bi.YandexAds`"
         last_date = bq_yandex.df_query(q_last_date).iloc[0,0].date()
         date = str(last_date)[:10]
-        print(date)
     except:
         date = str(datetime.datetime.today())
     
@@ -171,8 +161,9 @@ def y_direct_refresh():
     wf_df = pandas.DataFrame(wf_list, columns = column_headers)
     
     if probk_list == [] and wf_list == []:
-        print(f"Выполнение заняло {datetime.datetime.today() - start_time }")
-        return pandas.DataFrame([], columns = column_headers)
+        y_log += f"\n Выполнение заняло {datetime.datetime.today() - start_time }"
+        y_log += f"\n Новых данных нет"
+        return y_log
     
     direct_table_full = pandas.concat([probk_df,wf_df ], axis=0, join='outer', ignore_index=True, keys=None,
             levels=None, names=None, verify_integrity=False, copy=True)
@@ -188,8 +179,5 @@ def y_direct_refresh():
     utm_data = match_dict(cross_data)
 
     final_table_yandex =add_utm_to_df_yandex(direct_table_full,utm_data)
-    print(f"Всего получено {len(final_table_yandex)} строк")
-    print(f"Выполнение заняло {datetime.datetime.today() - start_time }")
-    if len(final_table_yandex) > 0:
-        bq_yandex.append(final_table_yandex)
+    
     return final_table_yandex

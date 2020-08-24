@@ -22,6 +22,7 @@ def query_df(qry, token):
     return db_data_df
 
 def refresh_personal_reports():
+    log = ""
 
     token = get_tokens()
     
@@ -83,6 +84,8 @@ def refresh_personal_reports():
         """
     regs_query = query_df(query_compaines,token['wf_base'])
     wf_regs_table.replace(regs_query)
+    
+
 
     q_add_visits = """
     SELECT 
@@ -104,6 +107,8 @@ def refresh_personal_reports():
     """
     res_plus_visits = wf_regs_table.df_query(q_add_visits)
     wf_regs_table.replace(res_plus_visits)
+    
+    log += f"По таблице report_regs обновилось {len(res_plus_visits)} строк \n"
     
     wf_vitr_table = gbq_pd('report_virs', datasetId = 'wf_bi')
     query_compaines = """
@@ -170,7 +175,26 @@ def refresh_personal_reports():
     regs_query = query_df(query_compaines,token['wf_base'])
     wf_vitr_table.replace(regs_query)
     
-
+    log += f"По таблице report_virs обновилось {len(regs_query)} строк \n"
+        
+    q_add_Ga_regs = """SELECT 
+      date, 
+      user_id,
+      phone,
+      domain,
+      deal_sums,
+      deal_cnt,
+      ifnull(regs, 0) as reg_cnt,
+      
+      goods
+    FROM `kalmuktech.wf_bi.report_virs` as v
+    left join (SELECT ga_hostname, count(distinct user_id ) as regs FROM `kalmuktech.wf_bi.wf_hosts` as w
+    inner join kalmuktech.wf_bi.users_id as u on u.u_id = w.ga_dimension1
+    group by 1) as g on g.ga_hostname = v.domain"""
+    regs_query = wf_vitr_table.df_query(q_add_Ga_regs)
+    wf_vitr_table.replace(regs_query)
+    
+    log += f"По таблице report_virs обновилось {len(regs_query)} строк \n"
 
     query_ann = """
     SELECT
@@ -340,3 +364,6 @@ def refresh_personal_reports():
         return pandas.DataFrame(dict_of_dims_date)
     dates_str = transform_sourse(dates_str)
     Ann_report.replace(dates_str)
+    
+    log += f"По таблице Ann_report обновилось {len(dates_str)} строк \n"
+    return log 

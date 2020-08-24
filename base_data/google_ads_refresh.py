@@ -6,6 +6,7 @@ import datetime
 from apiclient.discovery import build
 from google.cloud import bigquery
 from google.oauth2 import service_account
+
 class ga_connect:
     #   Задаём ключ из файла
     credentials = service_account.Credentials.from_service_account_file('kalmuktech-5b35a5c2c8ec.json',)
@@ -101,8 +102,6 @@ def ga_refresh():
     Workface_df=Workface.extract_expanse(date_start)
     Workface_df = df_proc(Workface_df)
     Workface_df['Site'] = 'Workface'
-
-
 
     objs = [Workface_df, i_cap_DF_old]
     google_ads_joined = pandas.concat(objs, axis=0, join='outer', ignore_index=True, keys=None,

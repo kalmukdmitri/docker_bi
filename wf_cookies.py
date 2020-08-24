@@ -10,6 +10,9 @@ from doc_token import get_tokens
 token = get_tokens()
 
 class ga_connect:
+    
+    log = ""
+    
     #   Задаём ключ из файла
     credentials = service_account.Credentials.from_service_account_file('kalmuktech-5b35a5c2c8ec.json',)
     analytics = build('analyticsreporting', 'v4', credentials=credentials)
@@ -82,7 +85,7 @@ def dedublicate_table(df):
     
 def refresh_wf_ga_tables():
     
-    
+    log = ""
     i_cap_GA_old = ga_connect('195060854')
     start = '2020-07-01'
     end = str(datetime.date.today())
@@ -106,9 +109,8 @@ def refresh_wf_ga_tables():
     df_cooks = df_cooks.drop(columns = ['Index', 'ga_sessions'])
     ga_table = gbq_pd('ga_wf_cookies', 'wf_bi')
     ga_table.replace(df_cooks)
-
-    print('ga_wf_cookies рефр')
-    print(len(df_cooks))
+    
+    log += f"По таблице ga_wf_cookies обновилось {len(df_cooks)} строк \n"
 
     q_user = """SELECT 
         users_uid.user_id as user_id,
@@ -122,10 +124,7 @@ def refresh_wf_ga_tables():
     wf_user_id = gbq_pd('users_id', datasetId = 'wf_bi')
     wf_user_id.replace(users_df)
     
-    print('users_id рефр')
-    print(len(users_df))
-    
-  
+    log += f"По таблице users_id обновилось {len(users_df)} строк \n"
 
     # Получить данных по хосту
 
@@ -163,8 +162,7 @@ def refresh_wf_ga_tables():
     t_wf_hosts = gbq_pd('wf_hosts', datasetId = 'wf_bi')
     t_wf_hosts.replace(hosts)
     
-    print('Хост рефр')
-    print(len(hosts))
+    log += f"По таблице wf_hosts обновилось {len(hosts)} строк \n"
 
     # Получить данных по домену
 
@@ -192,8 +190,7 @@ def refresh_wf_ga_tables():
     t_wf_domains = gbq_pd('wf_domain', datasetId = 'wf_bi')
     t_wf_domains.replace(wf_domain)
     
-    print('Домен рефр')
-    print(len(wf_domain))
+    log += f"По таблице wf_domain обновилось {len(wf_domain)} строк \n"
 
     # Получить данные по визитам
 
@@ -213,5 +210,6 @@ def refresh_wf_ga_tables():
 
     visits_table = gbq_pd('user_sess', 'wf_bi')
     visits_table.replace(visits_df)
-    print('Визиты рефр')
-    print(len(visits_df))
+    log += f"По таблице user_sess обновилось {len(visits_df)} строк \n"
+    
+    return log

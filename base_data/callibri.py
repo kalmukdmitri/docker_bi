@@ -72,7 +72,6 @@ def process_data(callibri_data):
 
 def callibri_refresh():
 
-    callibri_table = gbq_pd( 'callibri_data', 'marketing_bi')
     callibri_connect = callibri()
     date1 = datetime.date(2020, 4, 1)
     date2 = datetime.date.today()
@@ -85,6 +84,5 @@ def callibri_refresh():
         callibri_df = callibri_df.append(proccesed_data, ignore_index= True)
         time.sleep(1)
 
-    callibri_table = gbq_pd( 'callibri_data', 'marketing_bi')
-    callibri_table.replace(callibri_df)
-    return len(callibri_df)
+
+    return callibri_df

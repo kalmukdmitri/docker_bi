@@ -81,7 +81,6 @@ def vk_refresh():
     time.sleep(1)
     vk_table = campaign_to_table(get_campaign_stats,campaigns_dict)
     time.sleep(1)
-    print(f'Данных по vk {len(vk_table)}')
     
     columns = ['cmp_id',
             'capmaign',

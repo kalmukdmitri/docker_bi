@@ -12,11 +12,15 @@ from oauth2client.service_account import ServiceAccountCredentials
 import mysql.connector as mysql
 
 def wf_amo_refresh():
+    
+    log = ""
+    
     SCOPES = ['https://www.googleapis.com/auth/drive',
         'https://www.googleapis.com/auth/documents']
 
     credentials = ServiceAccountCredentials.from_json_keyfile_name('kalmuktech-5b35a5c2c8ec.json', SCOPES)
     service = build('docs', 'v1', credentials=credentials)
+    
     def get_old_token(docname):
         """Intup: None
         Output: Old token"""
@@ -78,7 +82,6 @@ def wf_amo_refresh():
         def get_data(self, prm):
             url = f"{get_AMO.m_url}{prm}"
             reqv = requests.get(url, headers = self.headers)   
-            print(reqv)
             return json.loads(reqv.text)
 
         def get_big_amo(self,params):
@@ -88,7 +91,6 @@ def wf_amo_refresh():
             while i:
                 c+=1
                 offset = c * 500
-                print(f'{params}?limit_rows=500&limit_offset={offset}')
                 params_url = f'{params}?limit_rows=500&limit_offset={offset}'
                 response = self.get_data(params_url)
                 if '_embedded' not in response:
@@ -96,7 +98,6 @@ def wf_amo_refresh():
                 result = response['_embedded']['items']
                 res.extend(result)
                 len_res= len(result)
-                print(len_res)
                 if c == 100 or len_res < 500: 
                     i = False
             return res
@@ -153,6 +154,7 @@ def wf_amo_refresh():
                                           'status', 'company_id' , 'contact_id'])
     leads_processed_gbq = gbq_pd('AMO_leads', datasetId = 'wf_bi')
     leads_processed_gbq.replace(leads_processed_df)
+    log += f"По таблице AMO_leads обновилось {len(leads_processed_df)} строк \n"
 
     def proccess_unsort(unsl, pipeline):
 
@@ -213,6 +215,7 @@ def wf_amo_refresh():
                                           'dtkt_key','email'])
     unsort_leads_processed_gbq = gbq_pd('AMO_unsort', datasetId = 'wf_bi')
     unsort_leads_processed_gbq.add(unsort_leads_processed_df, if_exists = 'replace')
+    log += f"По таблице AMO_unsort обновилось {len(unsort_leads_processed_df)} строк \n"
 
     def number_fix(number):
         number  = "".join([i for i in number if i.isnumeric()])
@@ -277,9 +280,8 @@ def wf_amo_refresh():
                                           'phone'])
     AMO_contacts_gbq = gbq_pd('AMO_contacts', datasetId = 'wf_bi')
     AMO_contacts_gbq.replace(contacts_df)
-
-
-
+    
+    log += f"По таблице AMO_contacts обновилось {len(contacts_df)} строк \n"
 
     def universal_requestor(db_connect,query):
         cnx = mysql.connect(**db_connect)
@@ -314,12 +316,16 @@ def wf_amo_refresh():
     query_compaines = 'SELECT company_id, user_id, about, name, is_paid FROM `companies`'
     companies = query_df(query_compaines)
     wf_compaies.replace(companies)
+    
+    log += f"По таблице wf_compaies обновилось {len(companies)} строк \n"
 
     wf_deals = gbq_pd('wf_deals', datasetId = 'wf_bi')
     query_deals = '''SELECT showcase_id , phone, email, domain,deals ,oborot  FROM `showcase_info` as info
     left join (SELECT  showcase_id as swd, count(distinct deal_id) as deals, sum(total_price) as oborot FROM `deals` group by 1) s on s.swd = info.showcase_id'''
     deals = query_df(query_deals)
     wf_deals.replace(deals)
+    
+    log += f"По таблице wf_deals обновилось {len(deals)} строк \n"
 
     wf_users = gbq_pd('wf_users', datasetId = 'wf_bi')
     query_users = """
@@ -331,6 +337,8 @@ def wf_amo_refresh():
     left join `companies` on users.user_id = companies.user_id """
     users = query_df(query_users)
     wf_users.replace(users)
+    
+    log += f"По таблице wf_users обновилось {len(users)} строк \n"
 
     join_table_gains_query= """
     with amo as (
@@ -353,7 +361,8 @@ def wf_amo_refresh():
     report = gbq_pd('WF_db', datasetId = 'wf_bi')
     report_df = report.df_query(join_table_gains_query)
     report.replace(report_df)
-
+    
+    log += f"По таблице WF_db обновилось {len(report_df)} строк \n"
 
     second_report = gbq_pd('ann_report', datasetId= 'wf_bi')
     query_ann = """
@@ -406,3 +415,7 @@ ORDER BY
     """
     ann_report = second_report.df_query(query_ann)
     second_report.replace(ann_report)
+    
+    log += f"По таблице ann_report обновилось {len(ann_report)} строк \n"
+    
+    return log
