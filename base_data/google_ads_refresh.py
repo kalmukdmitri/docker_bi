@@ -97,13 +97,13 @@ def ga_refresh():
     i_cap_DF_old = df_proc(i_cap_DF_old)
     i_cap_DF_old['Site'] = 'i-cap'
     
-    date_start = '2020-01-01'
-    Workface = ga_connect('195038144')
-    Workface_df=Workface.extract_expanse(date_start)
-    Workface_df = df_proc(Workface_df)
-    Workface_df['Site'] = 'Workface'
+#     date_start = '2020-01-01'
+#     Workface = ga_connect('195038144')
+#     Workface_df=Workface.extract_expanse(date_start)
+#     Workface_df = df_proc(Workface_df)
+#     Workface_df['Site'] = 'Workface'
 
-    objs = [Workface_df, i_cap_DF_old]
-    google_ads_joined = pandas.concat(objs, axis=0, join='outer', ignore_index=True, keys=None,
-            levels=None, names=None, verify_integrity=False, copy=True)
-    return google_ads_joined
+#     objs = [Workface_df, i_cap_DF_old]
+#     google_ads_joined = pandas.concat(objs, axis=0, join='outer', ignore_index=True, keys=None,
+#             levels=None, names=None, verify_integrity=False, copy=True)
+    return i_cap_DF_old

@@ -16,7 +16,7 @@ class direct_acc:
         self.metr_id = str(metr_id)
         self.name = name
         
-    def get_data(self, dimestions, metrics, date1, date2 = str(datetime.date.today())):
+    def get_data(self, dimestions, metrics, date1, date2 = str(datetime.date.today()-datetime.timedelta(days=1))):
         """Забираем сырые данные из метрики"""
         
         base_url = "https://api-metrika.yandex.net/stat/v1/data/?accuracy=full&limit=100000&attribution=last&group=day"
@@ -142,7 +142,7 @@ def y_direct_refresh():
         last_date = bq_yandex.df_query(q_last_date).iloc[0,0].date()
         date = str(last_date)[:10]
     except:
-        date = str(datetime.datetime.today())
+        date = '2020-04-10'
     
     header_str = dimestions+","+metrics
     header_str = header_str.replace(":","_")
@@ -153,28 +153,14 @@ def y_direct_refresh():
     caps = token['yandex']['caps']
     caps_dirc = direct_acc(**caps)
     probk_list = caps_dirc.get_lists(date, dimestions,metrics)
-    probk_df = pandas.DataFrame(probk_list, columns = column_headers)
+    direct_table_full = pandas.DataFrame(probk_list, columns = column_headers)
     
-    wf = token['yandex']['wf']
-    wf_dirc = direct_acc(**wf)
-    wf_list = wf_dirc.get_lists(date, dimestions,metrics)
-    wf_df = pandas.DataFrame(wf_list, columns = column_headers)
+    if probk_list == []:
+        return []
     
-    if probk_list == [] and wf_list == []:
-        y_log += f"\n Выполнение заняло {datetime.datetime.today() - start_time }"
-        y_log += f"\n Новых данных нет"
-        return y_log
-    
-    direct_table_full = pandas.concat([probk_df,wf_df ], axis=0, join='outer', ignore_index=True, keys=None,
-            levels=None, names=None, verify_integrity=False, copy=True)
     direct_table_full['date'] = direct_table_full['date'].apply(pandas.Timestamp)
 
-
-    cross_data1 = get_match_table(ym_class = caps_dirc)
-    cross_data2 = get_match_table(ym_class = wf_dirc)
-
-    cross_data = pandas.concat([cross_data1,cross_data2 ], axis=0, join='outer', ignore_index=True, keys=None,
-            levels=None, names=None, verify_integrity=False, copy=True)
+    cross_data = get_match_table(ym_class = caps_dirc)
 
     utm_data = match_dict(cross_data)
 

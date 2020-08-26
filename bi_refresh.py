@@ -1,11 +1,3 @@
-from pd_gbq import *
-from base_data.vk_refresh import *
-from base_data.google_ads_refresh import *
-from base_data.direct_refresh import *
-from base_data.fb_refresh import *
-from base_data.callibri import *
-from base_data.GA_cookie import *
-
 import time
 import sys
 import datetime
@@ -13,6 +5,24 @@ import requests
 import json
 import datetime
 import os
+from googleapiclient.discovery import build
+from oauth2client.service_account import ServiceAccountCredentials
+
+from pd_gbq import gbq_pd
+
+from base_data.vk_refresh import vk_refresh
+
+from base_data.google_ads_refresh import ga_refresh
+from base_data.wf_google_ads_refresh import wf_google_ads_refresh
+
+from base_data.direct_refresh import y_direct_refresh
+from base_data.wf_yandex import wf_y_direct_refresh
+
+from base_data.fb_refresh import refresh_fb
+from base_data.callibri import callibri_refresh
+from base_data.GA_cookie import ga_cookie_refresh
+
+
 
 timer_bi = datetime.datetime.today()
 
@@ -22,6 +32,12 @@ modules = [
      'dataset' : 'marketing_bi',
      'modif_type' : 'replace',
      'func' : ga_refresh
+    },
+    {'name': 'Google Ads WF',
+     'table': 'wf_google_ads',
+     'dataset' : 'marketing_bi',
+     'modif_type' : 'replace',
+     'func' : wf_google_ads_refresh
     },
     {'name': 'VK реклама',
      'table': 'VkAds',
@@ -34,6 +50,12 @@ modules = [
      'dataset' : 'marketing_bi',
      'modif_type' : 'append',
      'func' : y_direct_refresh
+    },
+    {'name': 'Wf yandex',
+     'table': 'wf_yandex',
+     'dataset' : 'marketing_bi',
+     'modif_type' : 'append',
+     'func' : wf_y_direct_refresh
     },
     {'name': 'Facebook Ads',
      'table': 'FacebookAds',
@@ -83,12 +105,12 @@ log  = f"""\n Выполнение скрипта обновления BI {str(d
 for i in modules:
     log+= open_system_refresher(i)
 
-from base_data.amo_tilda_reshresh import *
-from base_data.shop_icap import *
-from refresh_reports import *
-from personal_reports import *
-from base_data.wf_amo import *
-from wf_cookies import *
+from base_data.amo_tilda_reshresh import Amo_refresh
+from base_data.shop_icap import shop_icap_tables
+from refresh_reports import bi_report_refresh
+from personal_reports import refresh_personal_reports
+from base_data.wf_amo import wf_amo_refresh
+from wf_cookies import refresh_wf_ga_tables
 
 closed_modules = [
     {

@@ -5,11 +5,7 @@ import json
 import datetime
 import time
 
-from doc_token import get_tokens
-passwords = get_tokens()
-token = passwords['vk']
-
-def get_vk(method = 'ads.getStatistics', params=''):
+def get_vk(token = '', method = 'ads.getStatistics', params=''):
     user_id_V = "user_id=32785745&v=5.103"
     base_url = f"https://api.vk.com/method/{method}?{token}{user_id_V}&{params}"
     metrica_answer = requests.get(base_url)
@@ -50,7 +46,7 @@ def dict_vk(vk_answer):
     
     return dict_vk
 
-def get_vk_ads(method = 'ads.getAdsLayout', params='account_id=1604608801'):
+def get_vk_ads(token = '', method = 'ads.getAdsLayout', params='account_id=1604608801'):
     user_id_V = "user_id=32785745&v=5.103"
     base_url = f"https://api.vk.com/method/{method}?{token}{user_id_V}&{params}"
     metrica_answer = requests.get(base_url)
@@ -73,10 +69,16 @@ def dict_vk(vk_answer):
 
 def vk_refresh():
 
-    campaigns = get_vk(method = 'ads.getCampaigns', params= 'account_id=1604608801')
+    
+    from doc_token import get_tokens
+    passwords = get_tokens()
+    token = passwords['vk']
+
+
+    campaigns = get_vk(token = token, method = 'ads.getCampaigns', params= 'account_id=1604608801')
     camps_ids = ",".join([str(i['id']) for i in campaigns['response']])
     date_to = str(datetime.date.today())
-    get_campaign_stats = get_vk(params = f'ids_type=campaign&date_from=2020-04-25&date_to={date_to}&period=day&account_id=1604608801&ids={camps_ids}')
+    get_campaign_stats = get_vk(token = token, params = f'ids_type=campaign&date_from=2020-04-25&date_to={date_to}&period=day&account_id=1604608801&ids={camps_ids}')
     campaigns_dict = {str(i['id']):i['name'] for i in campaigns['response']}
     time.sleep(1)
     vk_table = campaign_to_table(get_campaign_stats,campaigns_dict)
@@ -91,7 +93,7 @@ def vk_refresh():
             'reach']
     vk_df = pandas.DataFrame(vk_table, columns=columns)
     time.sleep(1)
-    respose = get_vk_ads()
+    respose = get_vk_ads(token = token)
 
     utms = dict_vk(respose)
 

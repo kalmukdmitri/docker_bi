@@ -41,7 +41,6 @@ def get_match_table():
     base_url= f"https://graph.facebook.com/v6.0/act_124276768426220/ads?limit=10000&fields=creative&{token}"
     results = requests.get(base_url)
     data = json.loads((results.text))
-    print(len(data['data']))
     fb_df = pandas.DataFrame(data['data'])
     fb_df['creative'] = fb_df['creative'].apply(lambda x: x['id'])
     
@@ -79,7 +78,6 @@ def get_url_fb():
     base_url= f"https://graph.facebook.com/v6.0/act_124276768426220/adcreatives?limit=10000&fields=object_story_spec&{token}"
     results = requests.get(base_url)
     data = json.loads((results.text))
-    print(len(data['data']))
     fb_df = pandas.DataFrame(data['data'])
     
     fb_df['object_story_spec'] = extract_url(fb_df['object_story_spec'])
@@ -130,6 +128,3 @@ def refresh_fb():
     fb_dataframe_full = pandas.concat(fb_dfs, axis=0, join='outer', ignore_index=True, keys=None,
                 levels=None, names=None, verify_integrity=False, copy=True)
     return fb_dataframe_full
-
-if __name__ == "__main__":
-    refresh_fb()
