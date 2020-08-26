@@ -10,17 +10,17 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 from pd_gbq import gbq_pd
 
-from base_data.vk_refresh import vk_refresh
+from extract.vk_refresh import vk_refresh
 
-from base_data.google_ads_refresh import ga_refresh
-from base_data.wf_google_ads_refresh import wf_google_ads_refresh
+from extract.google_ads_refresh import ga_refresh
+from extract.wf_google_ads_refresh import wf_google_ads_refresh
 
-from base_data.direct_refresh import y_direct_refresh
-from base_data.wf_yandex import wf_y_direct_refresh
+from extract.direct_refresh import y_direct_refresh
+from extract.wf_yandex import wf_y_direct_refresh
 
-from base_data.fb_refresh import refresh_fb
-from base_data.callibri import callibri_refresh
-from base_data.GA_cookie import ga_cookie_refresh
+from extract.fb_refresh import refresh_fb
+from extract.callibri import callibri_refresh
+from extract.GA_cookie import ga_cookie_refresh
 
 
 
@@ -105,12 +105,12 @@ log  = f"""\n Выполнение скрипта обновления BI {str(d
 for i in modules:
     log+= open_system_refresher(i)
 
-from base_data.amo_tilda_reshresh import Amo_refresh
-from base_data.shop_icap import shop_icap_tables
-from refresh_reports import bi_report_refresh
-from personal_reports import refresh_personal_reports
-from base_data.wf_amo import wf_amo_refresh
-from wf_cookies import refresh_wf_ga_tables
+from extract.amo_tilda_reshresh import Amo_refresh
+from extract.shop_icap import shop_icap_tables
+from report.refresh_reports import bi_report_refresh
+from report.personal_reports import refresh_personal_reports
+from extract.wf_amo import wf_amo_refresh
+from transform_mix.wf_cookies import refresh_wf_ga_tables
 
 closed_modules = [
     {
