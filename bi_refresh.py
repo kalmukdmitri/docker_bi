@@ -79,6 +79,7 @@ modules = [
 
 def open_system_refresher(modul):
     systems_log = f"\n Скрипт {modul['name']} запустился "
+    datalog = [modul['name']]
     try:
         start_time = datetime.datetime.today()
         table = gbq_pd(modul['table'], modul['dataset'])
@@ -86,6 +87,7 @@ def open_system_refresher(modul):
         if len(data) == []:
             systems_log += f"\n Выполнение заняло {datetime.datetime.today() - start_time }"
             systems_log += f"\n Данных из {modul['name']} не получено "
+            datalog.append(0)
         else:
             if modul['modif_type'] == 'append':
                 table.append(data)
@@ -93,18 +95,22 @@ def open_system_refresher(modul):
                 table.replace(data)
             systems_log += f"\n Выполнение заняло {datetime.datetime.today() - start_time }"
             systems_log += f"\n Получено {len(data)} строк"
+            datalog.append(len(data))
     except:
         systems_log += f"\n При выполнение скрипта {modul['name']} возникла следующая ошибка\n {str(sys.exc_info()[1])}"
-
-    return systems_log
+        datalog.append(str(sys.exc_info()[1]))
+    return systems_log,datalog
 
 log  = f"""\n Выполнение скрипта обновления BI {str(datetime.datetime.today())[:19]} Началось
 
 """
+log_table = [["Дата выполнения",str(datetime.datetime.today())[:19]]]
 
 for i in modules:
-    log+= open_system_refresher(i)
-
+    log_file = open_system_refresher(i)
+    log+= log_file[0]
+    log_table.append(log_file[1])
+    
 from extract.amo_tilda_reshresh import Amo_refresh
 from extract.shop_icap import shop_icap_tables
 from report.refresh_reports import bi_report_refresh
@@ -141,19 +147,23 @@ closed_modules = [
 
 def closed_system_refresher(modul):
     systems_log = f"\n Скрипт {modul['name']} запустился "
+    data_lod = [modul['name']]
     try:
         start_time = datetime.datetime.today()
         log = modul['func']()
         systems_log += f"\n Выполнение заняло {datetime.datetime.today() - start_time }"
         systems_log += f"\n {log}"
+        data_lod.append("ОК")
     except:
         systems_log += f"\n При выполнение скрипта {modul['name']} возникла следующая ошибка\n {str(sys.exc_info()[1])}"
-
-    return systems_log
+        data_lod.append(str(sys.exc_info()[1]))
+    return systems_log,data_lod
 
 
 for i in closed_modules:
-    log+= closed_system_refresher(i)
+    log_file_с = closed_system_refresher(i)
+    log+= log_file_с[0]
+    log_table.append(log_file_с[1])
     
 log += f"\nВыполнение всех скриптов завершено за {datetime.datetime.today() - timer_bi }\n"
     
@@ -182,3 +192,61 @@ def add_log_to_doc(docname, log):
 
 log_file_name = '15BR7oalSjLt_q619rF74LUvn6qFCzYY56y9geHJ-rVo'
 add_log_to_doc(log_file_name,f'\n {str(log)}')
+
+import json, requests,datetime
+import mysql.connector as mysql
+import pandas as pd
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+SCOPES = ['https://www.googleapis.com/auth/analytics.readonly',
+             'https://spreadsheets.google.com/feeds',
+         'https://www.googleapis.com/auth/drive']
+credentials = ServiceAccountCredentials.from_json_keyfile_name('kalmuktech-5b35a5c2c8ec.json', SCOPES)
+gc = gspread.authorize(credentials)
+
+def GoogleListUpdate(doc_Name,list_Name,dataframe, offsetright=1, offsetdown=1):
+    edex = len(list(dataframe.axes[0]))
+    eter = len(list(dataframe.axes[1]))
+    print(edex,eter)
+    sh = gc.open(doc_Name)
+    worksheet1 = sh.worksheet(list_Name)
+    for dexlet in range(0,eter):
+        i = 0
+        cell_list = worksheet1.range(offsetdown,dexlet+offsetright,edex+offsetdown-1,dexlet+offsetright)
+        for cell in cell_list:
+            insert_data = int(dataframe[dexlet][i]) if str(dataframe[dexlet][i]).isdigit() else dataframe[dexlet][i]
+            cell.value = insert_data
+            i+=1  
+        worksheet1.update_cells(cell_list)
+
+def GoogleListextract(doc_Name,list_Name):
+    sh = gc.open(doc_Name)
+    worksheet1 = sh.worksheet(list_Name)
+    values_list = worksheet1.row_values(1)
+    end_ls = []
+    for i in range(1,len(values_list)+1):
+        end_ls.append(list(worksheet1.col_values(i)))
+
+    return end_ls
+
+def modify_log(old_log, new_log):
+    heads_old = { head[0]:num for num,head in enumerate(old_log)}
+    heads_new  = { head[0]:num for num,head in enumerate(new_log)}
+    
+    for i in old_log:
+        if i[0] not in heads_new:
+            i.insert(1,0)
+
+    for i in new_log:
+        if i[0] in heads_old:
+            old_row = heads_old[i[0]]
+            old_log[old_row].insert(1,i[1])
+        else:
+            old_log.append(i)
+    return pd.DataFrame(old_log).transpose()
+
+old_log= GoogleListextract('logs','log')
+new_log = modify_log(old_log,log_table)
+
+GoogleListUpdate('logs','log',new_log)
