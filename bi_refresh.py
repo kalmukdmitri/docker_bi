@@ -3,10 +3,11 @@ import sys
 import datetime
 import requests
 import json
-import datetime
 import os
 from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
+
+# Importing func to extract data
 
 from pd_gbq import gbq_pd
 
@@ -26,49 +27,59 @@ from extract.GA_cookie import ga_cookie_refresh
 
 timer_bi = datetime.datetime.today()
 
+# Creating list on functions to execute and log their result or errors
+
 modules = [
+# Import function to refresh table of Google Ads of i-cap.ru from google_ads_refresh
     {'name': 'Google Ads',
      'table': 'GoogleAds',
      'dataset' : 'marketing_bi',
      'modif_type' : 'replace',
      'func' : ga_refresh
     },
+# Import function to refresh table of Google Ads of workface.ru from wf_google_ads_refresh
     {'name': 'Google Ads WF',
      'table': 'wf_google_ads',
      'dataset' : 'marketing_bi',
      'modif_type' : 'replace',
      'func' : wf_google_ads_refresh
     },
+# Import function to refresh table of Vk Ads of i-cap.ru and workface.ru from vk_refresh
     {'name': 'VK реклама',
      'table': 'VkAds',
      'dataset' : 'marketing_bi',
      'modif_type' : 'replace',
      'func' : vk_refresh
     },
-    {'name': 'Яндекс Директ',
+# Import function to refresh table of Yandex Direct of i-cap.ru from direct_refresh
+    {'name': 'Яндекс Директ', 
      'table': 'YandexAds',
      'dataset' : 'marketing_bi',
      'modif_type' : 'append',
      'func' : y_direct_refresh
     },
+# Import function to refresh table of Yandex Direct of workface.ru from wf_yandex
     {'name': 'Wf yandex',
      'table': 'wf_yandex',
      'dataset' : 'marketing_bi',
      'modif_type' : 'append',
      'func' : wf_y_direct_refresh
     },
+# Import function to refresh table of Facebook Ads of i-cap.ru and workface.ru from fb_refresh
     {'name': 'Facebook Ads',
      'table': 'FacebookAds',
      'dataset' : 'marketing_bi',
      'modif_type' : 'replace',
      'func' : refresh_fb
     },
+# Import function to refresh table of Callibri Data of i-cap.ru and workface.ru from callibri_refresh
     {'name': 'Callibri data',
      'table': 'callibri_data',
      'dataset' : 'marketing_bi',
      'modif_type' : 'replace',
      'func' : callibri_refresh
     },
+# Import function to refresh table of Google Analytics Cookies of i-cap.ru and workface.ru from GA_cookie
     {'name': 'GA Cookie',
      'table': 'base_ga_cookie',
      'dataset' : 'marketing_bi',
@@ -78,6 +89,8 @@ modules = [
 ]
 
 def open_system_refresher(modul):
+    """Take item of list of fucn, executes it to get Dataframe of data resourses, then add or replaces set table in Google bigquery
+    """
     systems_log = f"\n Скрипт {modul['name']} запустился "
     datalog = [modul['name']]
     try:
@@ -110,6 +123,8 @@ for i in modules:
     log_file = open_system_refresher(i)
     log+= log_file[0]
     log_table.append(log_file[1])
+
+# Importing func to Transform and refresh data    
     
 from extract.amo_tilda_reshresh import Amo_refresh
 from extract.shop_icap import shop_icap_tables
@@ -117,6 +132,8 @@ from report.refresh_reports import bi_report_refresh
 from report.personal_reports import refresh_personal_reports
 from extract.wf_amo import wf_amo_refresh
 from transform_mix.wf_cookies import refresh_wf_ga_tables
+
+# Creating list on functions to execute table transformation and log their result or errors
 
 closed_modules = [
     {
@@ -146,6 +163,8 @@ closed_modules = [
 ]
 
 def closed_system_refresher(modul):
+    """Take item of list of fucn, executes it and logs the results. Functions refresh tables by it self
+    """
     systems_log = f"\n Скрипт {modul['name']} запустился "
     data_lod = [modul['name']]
     try:
@@ -174,7 +193,8 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name('kalmuktech-5b35a
 service = build('docs', 'v1', credentials=credentials)
 
 def add_log_to_doc(docname, log):
-    
+    """Take str of logs created by previos fucns and writes it on top of previos logs in set google doc
+    """
     googe_request = service.documents().get(documentId = docname).execute()
     token_str=googe_request['body']['content'][1]['paragraph']['elements'][0]['textRun']['content']
     doc_lenth = len(token_str)
@@ -193,8 +213,7 @@ def add_log_to_doc(docname, log):
 log_file_name = '15BR7oalSjLt_q619rF74LUvn6qFCzYY56y9geHJ-rVo'
 add_log_to_doc(log_file_name,f'\n {str(log)}')
 
-import json, requests,datetime
-import mysql.connector as mysql
+
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -206,6 +225,7 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name('kalmuktech-5b35a
 gc = gspread.authorize(credentials)
 
 def GoogleListUpdate(doc_Name,list_Name,dataframe, offsetright=1, offsetdown=1):
+    """this fucn inserts Dataframe to the set google sheets"""
     edex = len(list(dataframe.axes[0]))
     eter = len(list(dataframe.axes[1]))
     print(edex,eter)
@@ -221,6 +241,7 @@ def GoogleListUpdate(doc_Name,list_Name,dataframe, offsetright=1, offsetdown=1):
         worksheet1.update_cells(cell_list)
 
 def GoogleListextract(doc_Name,list_Name):
+    """this fucn exctract list of list of google sheets"""
     sh = gc.open(doc_Name)
     worksheet1 = sh.worksheet(list_Name)
     values_list = worksheet1.row_values(1)
@@ -231,6 +252,7 @@ def GoogleListextract(doc_Name,list_Name):
     return end_ls
 
 def modify_log(old_log, new_log):
+    """this merges data form previos log and new logs"""
     heads_old = { head[0]:num for num,head in enumerate(old_log)}
     heads_new  = { head[0]:num for num,head in enumerate(new_log)}
     
