@@ -20,19 +20,23 @@ def fb_add_x(cell, fld):
 def utm_to_colums_full(column):
     sourse_list = []
     medium_list = []
+    project_list = []
     for row in column:
+        
         if row and 'utm_source' in row:
             utm = row.split('?')
-        
+            domain = row.split("/")[2]
             tag_list = [y.split('=') for y in utm[-1].split('&')]
             tags= {i[0]:i[1] for i in tag_list}
             sourse_list.append(tags['utm_source'])
             medium_list.append(tags['utm_campaign'])
-
+            project_list.append(domain)
         else:
             sourse_list.append(None)
             medium_list.append(None)
-    return (sourse_list, medium_list)
+            project_list.append(None)
+            
+    return (sourse_list, medium_list,project_list)
 
 def get_match_table():
     
@@ -110,6 +114,8 @@ def refresh_fb():
         data = json.loads((results.text))
 
         fb_df = pandas.DataFrame(data['data'])
+        if len(fb_df)==0:
+            continue
         fb_df["lead"] =  fb_df['actions'].apply(fb_add_x, fld = 'lead')
         fb_df['click'] =  fb_df['actions'].apply(fb_add_x, fld = 'link_click')
         fb_df['spend'] =  fb_df['spend'].apply(float)
@@ -120,7 +126,7 @@ def refresh_fb():
         report_matcher = get_match_table()
         ids = {i:urls[report_matcher[i]] if report_matcher[i] in urls else print(i) for i in report_matcher}
         urls_list = [ids[i]  if i in ids else None for i in fb_df["ad_id"]]
-        fb_df['source'], fb_df['capmapaign'] = utm_to_colums_full(urls_list)
+        fb_df['source'], fb_df['capmapaign'], fb_df['project'] = utm_to_colums_full(urls_list)
 
         fb_df['date_start'] = fb_df['date_start'].apply(lambda x : pandas.Timestamp(datetime.datetime.strptime(x,'%Y-%m-%d')))
         fb_dfs.append(fb_df)
