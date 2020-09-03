@@ -342,6 +342,7 @@ def bi_report_refresh():
 
     join_table_gains_query  = """
     SELECT
+    "I-cap" AS project,
     campaign_name AS camp,
     cost,
     click AS clicks,
@@ -383,6 +384,7 @@ def bi_report_refresh():
     UNION ALL
 
     SELECT
+    project AS project,
     campaign_name AS camp,
     cost,
     click AS clicks,
@@ -404,6 +406,7 @@ def bi_report_refresh():
         0) AS sum
     FROM (
     SELECT
+        project,
         campaign_name,
         campaign_id,
         source,
@@ -419,7 +422,8 @@ def bi_report_refresh():
         2,
         3,
         4,
-        5)AS fb
+        5,
+        6)AS fb
     LEFT OUTER JOIN
     `kalmuktech.marketing_bi.predifined_leads_data_cookie` AS leads
     ON
@@ -429,6 +433,7 @@ def bi_report_refresh():
     
     UNION ALL
     SELECT
+    "I-cap" AS project,
     ga_campaign AS camp,
     ga_adCost AS cost,
     ga_adClicks AS clicks,
@@ -459,6 +464,7 @@ def bi_report_refresh():
     
     UNION ALL
     SELECT
+    project AS project,
     capmaign AS camp,
     cost,
     clicks AS clicks,
@@ -489,6 +495,7 @@ def bi_report_refresh():
     UNION ALL  
     
     SELECT
+    "I-cap" AS project,
     'Органика i-cap' AS camp,
     0,
     0 AS clicks,
@@ -513,11 +520,28 @@ def bi_report_refresh():
     
     UNION ALL
     
-    select * from  `kalmuktech.old_ads.old_data_report` 
+SELECT
+  "I-cap" AS project,
+  camp,
+  cost,
+  clicks,
+  date,
+  systems,
+  utm_source,
+  utm_campaign,
+  utm_term,
+  all_leads,
+  normal,
+  insale,
+  sold,
+  sum
+FROM
+  `kalmuktech.old_ads.old_data_report`
     
     UNION ALL
     
     SELECT
+    "I-cap" AS project,
       'Неопределено AMO i-cap' AS camp,
       0 as cost,
       0 AS clicks,
@@ -540,7 +564,7 @@ def bi_report_refresh():
         0
       END
         ) AS insale,
-      0 AS sum
+      0 AS sum  
     FROM
       `kalmuktech.marketing_bi.base_amo_leads`
     WHERE
@@ -563,13 +587,16 @@ def bi_report_refresh():
         FROM
           `kalmuktech.marketing_bi.callibri_data` a) )
     GROUP BY
-      4
+      5
     """
     report_expense = gbq_pd( 'report', 'BI_Dataset')
     report_df = report_expense.df_query(join_table_gains_query)
 
     def get_project(columns):
-        
+
+        if not columns:
+            return 'Неопределено'
+
         for i in [ 'cap', 'робк','утылк', 'bottle', 'fric', 'Органика i-cap' ]:
             if i in columns:
                 return 'I-Cap'
@@ -578,11 +605,10 @@ def bi_report_refresh():
                 return 'Workface'
         if 'arweg' in  columns:
             return 'Carwego'
-                
-            
+
         return 'Неопределено'
 
-    report_df['project'] = report_df['camp'].apply(get_project)
+    report_df['project'] = report_df['project'].apply(get_project)
     report_expense = gbq_pd( 'report', 'BI_Dataset')
     report_expense.replace(report_df)
     
