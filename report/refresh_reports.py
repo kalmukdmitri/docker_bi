@@ -342,44 +342,63 @@ def bi_report_refresh():
 
     join_table_gains_query  = """
     SELECT
-    "I-cap" AS project,
-    campaign_name AS camp,
-    cost,
-    click AS clicks,
-    system.date AS date,
-    'Яндекс Директ' AS systems,
-    'yandex' AS utm_source,
-    capmapaign AS utm_campaign,
-    keyword_join AS utm_term,
-    ifnull(all_leads,
+      "I-cap" AS project,
+      campaign_name AS camp,
+      cost,
+      click AS clicks,
+      date AS date,
+      'Яндекс Директ' AS systems,
+      'yandex' AS utm_source,
+      capmapaign AS utm_campaign,
+      "None" AS utm_term,
+      ifnull(all_leads,
         0) AS all_leads,
-    ifnull(normal,
+      ifnull(normal,
         0) AS normal,
-    ifnull(insale,
+      ifnull(insale,
         0) AS insale,
-    ifnull(sold,
+      ifnull(sold,
         0) AS sold,
-            ifnull(sum,
+      ifnull(sum,
         0) AS sum
     FROM (
-    SELECT
+      SELECT
         ym_ad_DirectOrder AS campaign_name,
         'yandex' AS source,
         Utm_campaign AS capmapaign,
-        ym_ad_DirectPhraseOrCond AS keyword_spent,
-        utm_term AS keyword_join,
         date,
-        ym_ad_AdCost AS cost,
-        ym_ad_clicks AS click
-    FROM
-        `kalmuktech.marketing_bi.YandexAds`) AS system
-    LEFT OUTER JOIN
-    `kalmuktech.marketing_bi.predifined_leads_data_cookie` AS leads
+        SUM(ym_ad_AdCost) AS cost,
+        SUM(ym_ad_clicks) AS click
+      FROM
+        `kalmuktech.marketing_bi.YandexAds`
+      GROUP BY
+        1,
+        2,
+        3,
+        4) AS yandex_ads
+    LEFT OUTER JOIN (
+      SELECT
+        utm_source,
+        utm_campaign,
+        date AS dt,
+        SUM(all_leads) AS all_leads,
+        SUM(normal) AS normal,
+        SUM(insale) AS insale,
+        SUM(sold) AS sold,
+        SUM(sum) AS sum
+      FROM
+        `kalmuktech.marketing_bi.predifined_leads_data_cookie`
+      WHERE
+        utm_source = 'yandex'
+      GROUP BY
+        1,
+        2,
+        3) AS yandex_leads
     ON
-    system.source = leads.utm_source
-    AND system.capmapaign = leads.utm_campaign
-    AND system.date = leads.date
-    AND system.keyword_join = leads.utm_term
+      yandex_leads.utm_source = yandex_ads.source
+      AND yandex_leads.utm_campaign = yandex_ads.capmapaign
+      AND yandex_leads.dt =yandex_ads.date
+
     
     UNION ALL
 

@@ -143,6 +143,10 @@ def y_direct_refresh():
         date = str(last_date)[:10]
     except:
         date = '2020-04-10'
+        
+    bq_yandex=gbq_pd( 'YandexAds', 'marketing_bi')
+    clean_last = f"Delete  FROM `kalmuktech.marketing_bi.YandexAds` where date = '{date}'"
+    last_date = bq_yandex.df_query(clean_last)
     
     header_str = dimestions+","+metrics
     header_str = header_str.replace(":","_")
