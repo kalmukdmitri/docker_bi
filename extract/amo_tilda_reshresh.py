@@ -92,7 +92,11 @@ def Amo_refresh():
                 c+=1
                 offset = c * 500
                 params_url = f'{params}?limit_rows=500&limit_offset={offset}'
-                result = self.get_data(params_url)['_embedded']['items']
+                result = self.get_data(params_url)
+                if '_embedded' not in result:
+                    return res
+                else:
+                    result = result['_embedded']['items']
                 res.extend(result)
                 len_res= len(result)
                 if c == 100 or len_res < 500: 
