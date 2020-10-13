@@ -141,6 +141,7 @@ def bi_report_refresh():
         utm_source,
         utm_campaign,
         utm_term,
+        
         date,
         sale
       FROM (
