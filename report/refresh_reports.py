@@ -473,6 +473,7 @@ def bi_report_refresh():
             ifnull(sum,
         0) AS sum
     FROM
+    
     `kalmuktech.marketing_bi.GoogleAds` AS system
     LEFT OUTER JOIN
     `kalmuktech.marketing_bi.predifined_leads_data_cookie` AS leads
